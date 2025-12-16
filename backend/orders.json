@@ -1,0 +1,26 @@
+[
+    {
+        "name": "Tên khách",
+        "phone": "SĐT",
+        "service": "Gói Thơm Tho",
+        "time": "Giờ hẹn",
+        "price": "200k",
+        "created_at": "2025-12-16 12:22:09"
+    },
+    {
+        "name": "Thuần",
+        "phone": "036783993",
+        "service": "Kiểu Bờm Sư Tử",
+        "time": "15h chiều ngày 16",
+        "price": "300k",
+        "created_at": "2025-12-16 12:48:27"
+    },
+    {
+        "name": "rêttert",
+        "phone": "056756756",
+        "service": "Kiểu Summer Cut",
+        "time": "15h chiều nay",
+        "price": "250k",
+        "created_at": "2025-12-16 12:54:36"
+    }
+]

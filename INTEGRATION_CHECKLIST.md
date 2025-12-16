@@ -1,0 +1,159 @@
+# Pet Lovers Spa - UI & Backend Integration Checklist
+
+## ✅ Backend Endpoints (main.py)
+
+### 1. Authentication
+- **POST /api/login**
+  - Input: `{ username, password }`
+  - Output: `{ role: "admin" | "user" }`
+  - Connected: ✅ Login.jsx calls this endpoint
+
+### 2. Chat & Orders
+- **POST /api/chat**
+  - Input: `{ message, history }`
+  - Output: `{ reply, order_data }`
+  - Features:
+    - AI chat with Groq LLM
+    - Auto-detects orders from AI response
+    - Saves orders to orders.json
+    - Sends email notifications
+  - Connected: ✅ Admin.jsx calls this endpoint
+
+### 3. Image Analysis
+- **POST /api/analyze-style**
+  - Input: `{ image_base64, message }`
+  - Output: `{ reply }`
+  - Features:
+    - Vision AI analyzes pet haircut styles
+    - Auto-detects orders if info is complete
+    - Saves orders to orders.json
+  - Connected: ✅ Admin.jsx has image upload feature
+
+### 4. Data Management
+- **GET /api/orders**
+  - Output: `{ orders: [] }`
+  - Connected: ✅ Admin.jsx loads orders in sidebar
+
+### 5. Export
+- **GET /api/export-excel**
+  - Output: Excel file download
+  - Connected: ✅ Admin.jsx has export button
+
+---
+
+## ✅ Frontend Components
+
+### 1. Login (Login.jsx + Login.css)
+- ✅ Beautiful gradient UI
+- ✅ Calls /api/login
+- ✅ Shows error messages
+- ✅ Demo credentials visible
+- ✅ Cute petshop theme
+
+### 2. Chat Interface (Admin.jsx + Admin.css)
+- ✅ Real-time chat with Mimi
+- ✅ Calls /api/chat
+- ✅ Displays order notifications
+- ✅ Handles order_data from backend
+- ✅ Typing indicator animation
+- ✅ Auto-scroll to latest message
+
+### 3. Image Analysis Feature
+- ✅ Image upload button
+- ✅ Preview selected image
+- ✅ Calls /api/analyze-style
+- ✅ Displays uploaded images in chat
+
+### 4. Orders Management
+- ✅ Orders sidebar (drawer)
+- ✅ Shows all saved orders
+- ✅ Order count in header
+- ✅ Export to Excel button
+
+### 5. UI Features
+- ✅ Modern gradient design (purple theme)
+- ✅ Responsive layout (mobile-friendly)
+- ✅ Smooth animations
+- ✅ Cute petshop emojis 🐾
+- ✅ Logout button
+- ✅ Error handling
+
+---
+
+## 🔧 Backend Setup Required
+
+Before running the backend, ensure:
+
+```bash
+cd backend
+pip install -r requirements.txt
+```
+
+Environment variables needed (.env file):
+```
+GROQ_API_KEY=your_groq_api_key_here
+EMAIL_GUI=your_gmail@gmail.com
+MAT_KHAU_UNG_DUNG=your_app_password_here
+EMAIL_NHAN=recipient_email@gmail.com
+```
+
+### Optional:
+- Create `backend/static/` folder for pet images
+- Email feature requires Gmail App Password setup
+
+---
+
+## 🚀 Running the Project
+
+### Backend (Port 8000)
+```bash
+cd backend
+python main.py
+# or
+uvicorn main:app --reload
+```
+
+### Frontend (Port 5173)
+```bash
+cd frontend
+npm run dev
+```
+
+---
+
+## 📋 Feature Summary
+
+| Feature | Backend | Frontend | Status |
+|---------|---------|----------|--------|
+| Login | ✅ | ✅ | Ready |
+| Chat with AI | ✅ | ✅ | Ready |
+| Auto Order Detection | ✅ | ✅ | Ready |
+| Image Analysis | ✅ | ✅ | Ready |
+| Order Saving | ✅ | ✅ | Ready |
+| Email Notifications | ✅ | ⚠️ | Backend only |
+| Export to Excel | ✅ | ✅ | Ready |
+| Orders Sidebar | ✅ | ✅ | Ready |
+| Beautiful UI | - | ✅ | Ready |
+
+---
+
+## 🎨 UI Theme
+
+- **Colors**: Purple gradient (#667eea → #764ba2)
+- **Emojis**: 🐾 🐶 🐕 🎀 ✨
+- **Fonts**: Modern system fonts
+- **Animations**: Smooth fade-in, typing indicator
+- **Responsive**: Works on desktop, tablet, mobile
+
+---
+
+## 📝 Demo Credentials
+
+- **Customer**: khachhang / 123
+- **Admin**: admin / admin123
+
+---
+
+## ✨ All Systems Connected!
+
+Frontend and Backend are fully integrated. Ready to deploy! 🚀
