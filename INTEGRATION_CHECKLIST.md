@@ -19,15 +19,15 @@
     - Sends email notifications
   - Connected: ✅ Admin.jsx calls this endpoint
 
-### 3. Image Analysis
-- **POST /api/analyze-style**
-  - Input: `{ image_base64, message }`
-  - Output: `{ reply }`
+### 3. Service Extraction
+- **POST /api/extract-services**
+  - Input: `{ history: [] }`
+  - Output: `{ services: [] }`
   - Features:
-    - Vision AI analyzes pet haircut styles
-    - Auto-detects orders if info is complete
-    - Saves orders to orders.json
-  - Connected: ✅ Admin.jsx has image upload feature
+    - Extracts services from chat history
+    - Merges button selections with chat mentions
+    - Prepares services for order confirmation
+  - Connected: ✅ CustomerChat.jsx uses this for order confirmation
 
 ### 4. Data Management
 - **GET /api/orders**
@@ -58,11 +58,11 @@
 - ✅ Typing indicator animation
 - ✅ Auto-scroll to latest message
 
-### 3. Image Analysis Feature
-- ✅ Image upload button
-- ✅ Preview selected image
-- ✅ Calls /api/analyze-style
-- ✅ Displays uploaded images in chat
+### 3. Service Selection
+- ✅ Service buttons (Spa, Cắt Tạo Kiểu, Khách Sạn)
+- ✅ Sub-service selection UI
+- ✅ Chat-based confirmation with "chốt" keyword
+- ✅ Automatic service extraction from chat history
 
 ### 4. Orders Management
 - ✅ Orders sidebar (drawer)
@@ -98,7 +98,6 @@ EMAIL_NHAN=recipient_email@gmail.com
 ```
 
 ### Optional:
-- Create `backend/static/` folder for pet images
 - Email feature requires Gmail App Password setup
 
 ---
@@ -128,11 +127,11 @@ npm run dev
 | Login | ✅ | ✅ | Ready |
 | Chat with AI | ✅ | ✅ | Ready |
 | Auto Order Detection | ✅ | ✅ | Ready |
-| Image Analysis | ✅ | ✅ | Ready |
+| Service Selection | ✅ | ✅ | Ready |
+| Chat-based Confirmation | ✅ | ✅ | Ready |
 | Order Saving | ✅ | ✅ | Ready |
 | Email Notifications | ✅ | ⚠️ | Backend only |
-| Export to Excel | ✅ | ✅ | Ready |
-| Orders Sidebar | ✅ | ✅ | Ready |
+| Orders Dashboard | ✅ | ✅ | Ready |
 | Beautiful UI | - | ✅ | Ready |
 
 ---
