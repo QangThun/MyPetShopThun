@@ -97,20 +97,6 @@ export default function Login({ onLogin }) {
             {loading ? 'Đang đăng nhập...' : 'Đăng Nhập'}
           </button>
         </form>
-
-        <div className="login-credentials">
-          <p className="credentials-title">Demo Credentials:</p>
-          <div className="credentials-list">
-            <div className="credential-item">
-              <span className="credential-label">Khách:</span>
-              <span className="credential-value">khachhang / 123</span>
-            </div>
-            <div className="credential-item">
-              <span className="credential-label">Admin:</span>
-              <span className="credential-value">admin / admin123</span>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

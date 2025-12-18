@@ -11,7 +11,7 @@ ORDER_FILE = "orders.json"
 # Thông tin đăng nhập demo
 USERS = {
     "khachhang": "123",
-    "admin": "admin123"
+    "admin": "123"
 }
 
 
