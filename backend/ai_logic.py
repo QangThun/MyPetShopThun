@@ -3,27 +3,91 @@ import re
 import json
 from groq import Groq
 from dotenv import load_dotenv
-from shop_data import SYSTEM_INSTRUCTION, SERVICES
+from shop_data import SYSTEM_INSTRUCTION, SERVICES, get_system_instruction_with_emotion
 
 load_dotenv()
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
+def detect_emotion(message: str, history: list):
+    """
+    Phát hiện cảm xúc của khách hàng bằng Groq AI
+
+    Args:
+        message: Tin nhắn từ người dùng
+        history: Lịch sử chat
+
+    Returns:
+        str: Một trong ['annoyed', 'worried', 'happy', 'neutral']
+    """
+    try:
+        history_text = "\n".join([f"{msg['role']}: {msg['content']}" for msg in history[-3:]]) if history else ""
+
+        emotion_prompt = f"""Phân tích cảm xúc của khách hàng từ tin nhắn cuối cùng.
+
+Lịch sử chat gần đây:
+{history_text}
+
+Tin nhắn hiện tại: {message}
+
+Xác định cảm xúc chính của khách hàng là gì?
+
+Danh sách cảm xúc:
+1. "annoyed" - Khách bực bội, khó chịu, không hài lòng
+2. "worried" - Khách lo lắng, sợ hãi (thú cưng bệnh, sợ đau, lo lắng về sức khỏe)
+3. "happy" - Khách vui vẻ, hài lòng, tích cực
+4. "neutral" - Khách trung lập, đặt câu hỏi thường, không thể hiện cảm xúc rõ
+
+CH CHỉ trả lại MỘT trong 4 từ trên, không giải thích thêm. Ví dụ: "annoyed"""
+
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": "Bạn là chuyên gia phân tích cảm xúc. Hãy xác định cảm xúc của khách hàng dựa trên lời nói của họ."},
+                {"role": "user", "content": emotion_prompt}
+            ],
+            temperature=0.3,
+            max_tokens=20
+        )
+
+        emotion_text = completion.choices[0].message.content.strip().lower()
+
+        # Kiểm tra kết quả
+        emotions = ['annoyed', 'worried', 'happy', 'neutral']
+        for emotion in emotions:
+            if emotion in emotion_text:
+                print(f"Detected emotion: {emotion}")
+                return emotion
+
+        return "neutral"
+
+    except Exception as e:
+        print(f"Lỗi phát hiện cảm xúc: {e}")
+        return "neutral"
+
+
 def chat_with_ai(message: str, history: list, selected_services: list = []):
     """
     Chat với Groq AI và trích xuất đơn hàng nếu có
-    
+    Tự động phát hiện cảm xúc và điều chỉnh response phù hợp
+
     Args:
         message: Tin nhắn từ người dùng
         history: Lịch sử chat
         selected_services: Danh sách dịch vụ đã chọn
-    
+
     Returns:
-        dict: {reply, order_data, services}
+        dict: {reply, order_data, services, emotion}
     """
     try:
-        messages = [{"role": "system", "content": SYSTEM_INSTRUCTION}] + history
+        # Phát hiện cảm xúc của khách
+        emotion = detect_emotion(message, history)
+
+        # Điều chỉnh system instruction dựa trên cảm xúc
+        adjusted_system_instruction = get_system_instruction_with_emotion(emotion)
+
+        messages = [{"role": "system", "content": adjusted_system_instruction}] + history
         messages.append({"role": "user", "content": message})
 
         completion = client.chat.completions.create(
@@ -50,7 +114,8 @@ def chat_with_ai(message: str, history: list, selected_services: list = []):
         return {
             "reply": bot_reply,
             "order_data": order_info,
-            "services": SERVICES
+            "services": SERVICES,
+            "emotion": emotion
         }
 
     except Exception as e:

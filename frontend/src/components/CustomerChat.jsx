@@ -173,12 +173,6 @@ export default function CustomerChat({ onLogout }) {
         setServices(data.services);
       }
 
-      // Show info form if bot asks for it
-      const botReplyLower = data.reply.toLowerCase();
-      if (botReplyLower.includes('thông tin') || botReplyLower.includes('điền')) {
-        setShowInfoForm(true);
-      }
-
       if (data.order_data) {
         // Show order summary for confirmation
         setOrderSummary(data.order_data);
