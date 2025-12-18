@@ -49,19 +49,20 @@ export default function CustomerChat({ onLogout }) {
     const subService = services[serviceKey]?.sub_services?.find(s => s.id === subServiceId);
     const message = `${subService?.name || ''}`;
 
-    setSelectedServices([...selectedServices, {
+    const updatedServices = [...selectedServices, {
       service: serviceKey,
       subService: subServiceId,
       name: subService?.name,
       price: subService?.price
-    }]);
+    }];
 
+    setSelectedServices(updatedServices);
     setCurrentServiceKey(null);
 
     const userMessage = { role: 'user', content: message };
     setMessages([...messages, userMessage]);
     setInput('');
-    sendMessage(message, [...messages, userMessage]);
+    sendMessage(message, [...messages, userMessage], updatedServices);
   };
 
   // Go back to main services
@@ -70,9 +71,70 @@ export default function CustomerChat({ onLogout }) {
   };
 
   // Send chat message
-  const sendMessage = async (messageText = null, msgHistory = null) => {
+  const sendMessage = async (messageText = null, msgHistory = null, updatedServices = null) => {
     const textToSend = messageText || input;
     if (!textToSend.trim()) return;
+
+    const currentServices = updatedServices !== null ? updatedServices : selectedServices;
+
+    // Check if user is trying to confirm order via chat
+    const textLower = textToSend.toLowerCase();
+    const confirmKeywords = ['chốt', 'xác nhận', 'confirm', 'ok', 'được', 'vâng', 'ổn', 'phòng thường', 'phòng vip', 'phòng thg'];
+    const isConfirmingViaChat = confirmKeywords.some(keyword => textLower.includes(keyword)) && currentServices.length > 0;
+
+    // If confirming via chat, show form for customer to fill info
+    if (isConfirmingViaChat) {
+      const userMessage = { role: 'user', content: textToSend };
+      setMessages([...messages, userMessage]);
+
+      setLoading(true);
+      try {
+        const historyForBackend = [...messages, userMessage].filter(msg => msg.role && msg.content).map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }));
+
+        // Extract services from chat history
+        const res = await fetch('http://127.0.0.1:8000/api/extract-services', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            history: historyForBackend
+          }),
+        });
+
+        const data = await res.json();
+        const extractedServices = data.services || [];
+
+        // Merge button-selected services with chat-extracted services
+        const allServices = [...currentServices];
+
+        // Add extracted services that aren't already in button selections
+        extractedServices.forEach(extracted => {
+          const alreadyExists = currentServices.some(
+            btn => btn.name === extracted.name
+          );
+          if (!alreadyExists) {
+            allServices.push(extracted);
+          }
+        });
+
+        if (allServices.length > 0) {
+          // Show form with merged services (buttons + chat mentions)
+          setSelectedServices(allServices);
+          setShowInfoForm(true);
+        } else {
+          // No services found anywhere
+          alert('Không tìm thấy dịch vụ nào được chọn. Vui lòng chọn hoặc nêu rõ dịch vụ.');
+        }
+      } catch (error) {
+        console.error('Error extracting services:', error);
+        alert('Lỗi xử lý. Vui lòng thử lại.');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
 
     const userMessage = msgHistory ? null : { role: 'user', content: textToSend };
     const newMsgs = msgHistory || [...messages, userMessage];
@@ -165,14 +227,22 @@ export default function CustomerChat({ onLogout }) {
       return;
     }
 
+    // Check if any services are selected
+    if (selectedServices.length === 0) {
+      alert('Vui lòng chọn ít nhất một dịch vụ từ danh sách bên dưới');
+      return;
+    }
+
     setShowInfoForm(false);
     setLoading(true);
 
     try {
       // Calculate total price from selected services
       const totalPrice = selectedServices.reduce((sum, service) => {
-        const price = service.price.replace('k', '').replace('K', '').trim();
-        return sum + (parseFloat(price) || 0);
+        // Extract numeric value before 'k', handling prices like "150k/ngày"
+        const match = service.price.match(/(\d+(?:\.\d+)?)\s*k/i);
+        const price = match ? parseFloat(match[1]) : 0;
+        return sum + price;
       }, 0);
 
       const orderSummaryData = {
@@ -183,7 +253,7 @@ export default function CustomerChat({ onLogout }) {
         service: selectedServices.map(s => s.name).join('\n'),
         services: selectedServices,
         time: customerInfo.time,
-        price: totalPrice + 'k'
+        price: Math.round(totalPrice * 10) / 10 + 'k'
       };
 
       setOrderSummary(orderSummaryData);
@@ -341,6 +411,31 @@ export default function CustomerChat({ onLogout }) {
           <div className="order-modal-overlay">
             <div className="order-modal">
               <div className="order-modal-header">📝 Thông Tin Khách Hàng</div>
+
+              {/* Display Selected Services */}
+              {selectedServices.length > 0 && (
+                <div className="order-details-summary">
+                  <div className="summary-item">
+                    <span className="summary-label">🛎️ Dịch vụ đã chốt:</span>
+                  </div>
+                  {selectedServices.map((service, idx) => (
+                    <div key={idx} className="summary-item">
+                      <span className="summary-label">  • {service.name}</span>
+                      <span className="summary-value">{service.price}</span>
+                    </div>
+                  ))}
+                  <div className="summary-item total">
+                    <span className="summary-label">💰 Tổng cộng:</span>
+                    <span className="summary-value">
+                      {Math.round(selectedServices.reduce((sum, s) => {
+                        const match = s.price.match(/(\d+(?:\.\d+)?)\s*k/i);
+                        return sum + (match ? parseFloat(match[1]) : 0);
+                      }, 0) * 10) / 10}k
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <div className="info-form">
                 <div className="form-group">
                   <label className="form-label">👤 Tên của bạn</label>
