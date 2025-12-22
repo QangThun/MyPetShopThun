@@ -144,7 +144,7 @@ Nếu khách hỏi chi tiết về gói dịch vụ nào (như "gói Teddy Bear 
 - Nếu khách muốn tiếp tục: hỏi "Bé có muốn chọn gói này không?"
 - Nếu khách muốn chọn: quay về BƯỚC 3
 
-QUY TRÌNH BỊN HÀNG (BẮT BUỘC TUÂN THỦ):
+QUY TRÌNH (BẮT BUỘC TUÂN THỦ):
 
 BƯỚC 1 - CHÀO VÀ HỎI DỊCH VỤ:
 - Chào khách thân thiết
@@ -229,7 +229,7 @@ KHÁCH HÀNG ĐANG VUI VẺ / HÀI LÒNG:
 """,
         
         "neutral": """
-KHÁCH HÀNG CÓ TÂMTRẠNG TRUNG LẬP:
+KHÁCH HÀNG CÓ TÂM `TRẠNG TRUNG LẬP:
 - Cung cấp tư vấn tiêu chuẩn, chuyên nghiệp
 - Hỏi rõ nhu cầu của khách hàng
 - Gợi ý các dịch vụ phù hợp với thú cưng
