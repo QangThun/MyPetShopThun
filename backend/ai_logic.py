@@ -138,15 +138,76 @@ def chat_with_ai(message: str, history: list, selected_services: list = []):
 def extract_services_from_history(history: list):
     """
     Trích xuất dịch vụ từ lịch sử chat bằng AI
-    
+    Chỉ trích xuất từ tin nhắn người dùng mới nhất (chứa từ khóa xác nhận)
+
     Args:
         history: Lịch sử chat
-    
+
     Returns:
         dict: {services: [list of extracted services]}
     """
     try:
-        history_text = "\n".join([f"{msg['role']}: {msg['content']}" for msg in history])
+        # Lấy tin nhắn người dùng mới nhất (tin nhắn xác nhận)
+        last_user_message = None
+        for msg in reversed(history):
+            if msg.get('role') == 'user':
+                last_user_message = msg.get('content', '')
+                break
+
+        if not last_user_message:
+            return {"services": []}
+
+        # First try: Keyword matching for service names
+        extracted_by_keyword = []
+        message_lower = last_user_message.lower()
+
+        # Score each service based on how many keywords from its name appear in the message
+        service_scores = []
+
+        for service_key, service_data in SERVICES.items():
+            for sub in service_data.get('sub_services', []):
+                service_name = sub['name'].lower()
+
+                # Exact match - highest priority
+                if service_name in message_lower:
+                    service_scores.append((5, {
+                        'service_key': service_key,
+                        'sub_id': sub['id'],
+                        'name': sub['name'],
+                        'price': sub['price']
+                    }))
+                    continue
+
+                # Count how many keywords match
+                service_keywords = [w for w in service_name.split() if len(w) > 2]
+                matching_keywords = sum(1 for keyword in service_keywords if keyword in message_lower)
+
+                # Only include if at least 2 keywords match (e.g., "phòng" + "thường")
+                # This prevents matching just "phòng" for both "Phòng Thường" and "Phòng VIP"
+                if len(service_keywords) > 0 and matching_keywords == len(service_keywords):
+                    service_scores.append((matching_keywords, {
+                        'service_key': service_key,
+                        'sub_id': sub['id'],
+                        'name': sub['name'],
+                        'price': sub['price']
+                    }))
+
+        # Sort by score (descending) and extract
+        service_scores.sort(key=lambda x: x[0], reverse=True)
+        extracted_by_keyword = [service for _, service in service_scores]
+
+        # Remove duplicates (same service mentioned multiple times)
+        unique_by_id = {}
+        for service in extracted_by_keyword:
+            if service['sub_id'] not in unique_by_id:
+                unique_by_id[service['sub_id']] = service
+
+        extracted_by_keyword = list(unique_by_id.values())
+
+        # If we found services via keyword matching, return them
+        if extracted_by_keyword:
+            print(f"Found services via keyword matching: {extracted_by_keyword}")
+            return {"services": extracted_by_keyword}
 
         # List all available services for matching
         all_services_list = []
@@ -159,40 +220,39 @@ def extract_services_from_history(history: list):
                     'price': sub['price']
                 })
 
-        extraction_prompt = f"""Bạn là trợ lý phân tích dịch vụ thú cưng. Hãy TRÍCH XUẤT TẤT CẢ những dịch vụ mà khách hàng đã đề cập hoặc đã chọn trong toàn bộ cuộc trò chuyện.
+        extraction_prompt = f"""Bạn là trợ lý phân tích dịch vụ thú cưng. Hãy TRÍCH XUẤT những dịch vụ mà khách hàng đề cập TRONG TIN NHẮN XÁC NHẬN NÀY (không phải toàn bộ lịch sử).
 
-QUAN TRỌNG: Hãy tìm tất cả các dịch vụ được nhắc đến, kể cả những dịch vụ được nêu ở đầu cuộc trò chuyện!
+QUAN TRỌNG: Chỉ trích xuất những dịch vụ được đề cập TỪ TRONG TIN NHẮN HIỆN TẠI, không phải từ các tin nhắn trước!
 
-Lịch sử chat:
-{history_text}
+Tin nhắn xác nhận từ khách hàng:
+"{last_user_message}"
 
 Danh sách TẤT CẢ dịch vụ có sẵn:
 {json.dumps(all_services_list, ensure_ascii=False, indent=2)}
 
 HƯỚNG DẪN:
-1. Tìm tất cả tên dịch vụ được đề cập trong chat (bất kỳ nơi nào)
+1. Tìm tên dịch vụ được đề cập TRONG TIN NHẮN TRÊN
 2. So sánh với danh sách dịch vụ có sẵn
-3. Trả lại TẤT CẢ những dịch vụ khớp với tên trong chat
+3. Trả lại CHỈ những dịch vụ khớp
 
 Hãy trả lại JSON với cấu trúc:
 {{
     "services": [
-        {{"service_key": "spa", "sub_id": "spa_1", "name": "Tên Dịch Vụ", "price": "200k"}},
         {{"service_key": "hotel", "sub_id": "hotel_1", "name": "Phòng Thường", "price": "150k/ngày"}},
         ...
     ]
 }}
 
-QUAN TRỌNG: Bao gồm tất cả các dịch vụ được nêu, không bỏ sót bất cứ dịch vụ nào!"""
+Nếu không tìm thấy dịch vụ nào, trả lại: {{"services": []}}"""
 
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
-                {"role": "system", "content": "Bạn là trợ lý phân tích chuyên nghiệp. Hãy trích xuất TẤT CẢ dịch vụ từ cuộc trò chuyện một cách chính xác và đầy đủ."},
+                {"role": "system", "content": "Bạn là trợ lý phân tích chuyên nghiệp. Hãy trích xuất dịch vụ CHỈ từ tin nhắn hiện tại, không phải từ toàn bộ lịch sử."},
                 {"role": "user", "content": extraction_prompt}
             ],
             temperature=0.2,
-            max_tokens=1000
+            max_tokens=500
         )
 
         response_text = completion.choices[0].message.content
@@ -214,3 +274,83 @@ QUAN TRỌNG: Bao gồm tất cả các dịch vụ được nêu, không bỏ s
     except Exception as e:
         print(f"Lỗi trích xuất dịch vụ: {e}")
         return {"services": []}
+
+
+def extract_customer_info_from_history(history: list):
+    """
+    Trích xuất thông tin khách hàng từ lịch sử chat bằng AI
+
+    Args:
+        history: Lịch sử chat
+
+    Returns:
+        dict: {name, phone, petName, petType, time} - các trường có thể rỗng nếu không tìm thấy
+    """
+    try:
+        # Tạo full chat history text
+        history_text = "\n".join([f"{msg['role']}: {msg['content']}" for msg in history])
+
+        if not history_text.strip():
+            return {"name": "", "phone": "", "petName": "", "petType": "", "time": ""}
+
+        extraction_prompt = f"""Bạn là trợ lý trích xuất thông tin khách hàng. Hãy trích xuất các thông tin sau từ lịch sử chat:
+- Tên khách hàng
+- Số điện thoại
+- Tên thú cưng
+- Loại thú cưng (Chó, Mèo, v.v.)
+- Giờ hẹn/thời gian
+
+Lịch sử chat:
+{history_text}
+
+HƯỚNG DẪN:
+1. Tìm tất cả thông tin có sẵn trong chat
+2. Nếu không tìm thấy, để trống (không điền "không biết" hay "N/A")
+3. Trả lại JSON có cấu trúc chính xác
+
+Hãy trả lại JSON:
+{{
+    "name": "Tên khách (nếu tìm thấy, nếu không để trống)",
+    "phone": "SĐT (nếu tìm thấy, nếu không để trống)",
+    "petName": "Tên thú cưng (nếu tìm thấy, nếu không để trống)",
+    "petType": "Loại thú cưng như Chó/Mèo (nếu tìm thấy, nếu không để trống)",
+    "time": "Giờ hẹn (nếu tìm thấy, nếu không để trống)"
+}}
+
+CHỈ TRẢ LẠI JSON, KHÔNG CÓ LỜI GIẢI THÍCH."""
+
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": "Bạn là trợ lý trích xuất thông tin chuyên nghiệp. Hãy trích xuất thông tin khách hàng từ cuộc trò chuyện một cách chính xác."},
+                {"role": "user", "content": extraction_prompt}
+            ],
+            temperature=0.2,
+            max_tokens=300
+        )
+
+        response_text = completion.choices[0].message.content
+        print(f"Customer info extraction response: {response_text}")
+
+        # Extract JSON from response
+        json_match = re.search(r'\{[\s\S]*\}', response_text)
+        if json_match:
+            try:
+                result = json.loads(json_match.group(0))
+                extracted_info = {
+                    "name": result.get("name", ""),
+                    "phone": result.get("phone", ""),
+                    "petName": result.get("petName", ""),
+                    "petType": result.get("petType", ""),
+                    "time": result.get("time", "")
+                }
+                print(f"Extracted customer info: {extracted_info}")
+                return extracted_info
+            except json.JSONDecodeError as je:
+                print(f"JSON decode error: {je}")
+
+        return {"name": "", "phone": "", "petName": "", "petType": "", "time": ""}
+
+    except Exception as e:
+        print(f"Lỗi trích xuất thông tin khách hàng: {e}")
+        return {"name": "", "phone": "", "petName": "", "petType": "", "time": ""}

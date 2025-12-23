@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
-from ai_logic import chat_with_ai, extract_services_from_history
+from ai_logic import chat_with_ai, extract_services_from_history, extract_customer_info_from_history
 from api_data import (
     validate_login,
     get_services,
@@ -102,6 +102,12 @@ def confirm_order_endpoint(data: ConfirmOrderRequest, background_tasks: Backgrou
 def extract_services(data: ExtractServicesRequest):
     """API trích xuất dịch vụ từ lịch sử chat"""
     return extract_services_from_history(data.history)
+
+
+@app.post("/api/extract-customer-info")
+def extract_customer_info(data: ExtractServicesRequest):
+    """API trích xuất thông tin khách hàng từ lịch sử chat"""
+    return extract_customer_info_from_history(data.history)
 
 
 @app.get("/api/orders")

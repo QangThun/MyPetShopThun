@@ -97,5 +97,77 @@
         "time": "15h chiều ngày 16",
         "price": "300k",
         "created_at": "2025-12-20 21:38:25"
+    },
+    {
+        "name": "ewrw",
+        "phone": "0348787345",
+        "petName": "thuan",
+        "petType": "chó",
+        "service": "Sạch Sẽ (5kg-10kg)\nThơm Tho (Dưới 5kg)\nSiêu Cấp (>10kg)\nKiểu Teddy Bear\nKiểu Nhật (Japanese)\nKiểu Summer Cut\nKiểu Bờm Sư Tử\nKiểu Trái Tim\nPhòng Thường\nPhòng VIP",
+        "services": [
+            {
+                "service": "spa",
+                "subService": "spa_2",
+                "name": "Sạch Sẽ (5kg-10kg)",
+                "price": "350k"
+            },
+            {
+                "service_key": "spa",
+                "sub_id": "spa_1",
+                "name": "Thơm Tho (Dưới 5kg)",
+                "price": "200k"
+            },
+            {
+                "service_key": "spa",
+                "sub_id": "spa_3",
+                "name": "Siêu Cấp (>10kg)",
+                "price": "500k"
+            },
+            {
+                "service_key": "styling",
+                "sub_id": "style_1",
+                "name": "Kiểu Teddy Bear",
+                "price": "300k"
+            },
+            {
+                "service_key": "styling",
+                "sub_id": "style_2",
+                "name": "Kiểu Nhật (Japanese)",
+                "price": "300k"
+            },
+            {
+                "service_key": "styling",
+                "sub_id": "style_3",
+                "name": "Kiểu Summer Cut",
+                "price": "250k"
+            },
+            {
+                "service_key": "styling",
+                "sub_id": "style_4",
+                "name": "Kiểu Bờm Sư Tử",
+                "price": "300k"
+            },
+            {
+                "service_key": "styling",
+                "sub_id": "style_5",
+                "name": "Kiểu Trái Tim",
+                "price": "350k"
+            },
+            {
+                "service_key": "hotel",
+                "sub_id": "hotel_1",
+                "name": "Phòng Thường",
+                "price": "150k/ngày"
+            },
+            {
+                "service_key": "hotel",
+                "sub_id": "hotel_2",
+                "name": "Phòng VIP",
+                "price": "300k/ngày"
+            }
+        ],
+        "time": "14h ",
+        "price": "3000k",
+        "created_at": "2025-12-23 09:15:59"
     }
 ]

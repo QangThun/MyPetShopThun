@@ -80,9 +80,9 @@ export default function CustomerChat({ onLogout }) {
     // Check if user is trying to confirm order via chat
     const textLower = textToSend.toLowerCase();
     const confirmKeywords = ['chốt', 'xác nhận', 'confirm', 'ok', 'được', 'vâng', 'ổn', 'phòng thường', 'phòng vip', 'phòng thg'];
-    const isConfirmingViaChat = confirmKeywords.some(keyword => textLower.includes(keyword)) && currentServices.length > 0;
+    const isConfirmingViaChat = confirmKeywords.some(keyword => textLower.includes(keyword));
 
-    // If confirming via chat, show form for customer to fill info
+    // If confirming via chat, extract services AND customer info
     if (isConfirmingViaChat) {
       const userMessage = { role: 'user', content: textToSend };
       setMessages([...messages, userMessage]);
@@ -95,7 +95,7 @@ export default function CustomerChat({ onLogout }) {
         }));
 
         // Extract services from chat history
-        const res = await fetch('http://127.0.0.1:8000/api/extract-services', {
+        const servicesRes = await fetch('http://127.0.0.1:8000/api/extract-services', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -103,32 +103,93 @@ export default function CustomerChat({ onLogout }) {
           }),
         });
 
-        const data = await res.json();
-        const extractedServices = data.services || [];
+        const servicesData = await servicesRes.json();
+        const extractedServices = servicesData.services || [];
 
-        // Merge button-selected services with chat-extracted services
-        const allServices = [...currentServices];
-
-        // Add extracted services that aren't already in button selections
-        extractedServices.forEach(extracted => {
-          const alreadyExists = currentServices.some(
-            btn => btn.name === extracted.name
-          );
-          if (!alreadyExists) {
-            allServices.push(extracted);
-          }
+        // Extract customer info from chat history
+        const infoRes = await fetch('http://127.0.0.1:8000/api/extract-customer-info', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            history: historyForBackend
+          }),
         });
 
-        if (allServices.length > 0) {
-          // Show form with merged services (buttons + chat mentions)
-          setSelectedServices(allServices);
-          setShowInfoForm(true);
-        } else {
-          // No services found anywhere
+        const infoData = await infoRes.json();
+        const extractedInfo = infoData;
+
+        // Use button-selected services primarily
+        let finalServices = [];
+
+        if (currentServices.length > 0) {
+          finalServices = [...currentServices];
+        } else if (extractedServices.length > 0) {
+          const uniqueServices = new Map();
+          extractedServices.forEach(service => {
+            if (!uniqueServices.has(service.name)) {
+              uniqueServices.set(service.name, service);
+            }
+          });
+          finalServices = Array.from(uniqueServices.values());
+        }
+
+        if (finalServices.length === 0) {
           alert('Không tìm thấy dịch vụ nào được chọn. Vui lòng chọn hoặc nêu rõ dịch vụ.');
+          setLoading(false);
+          return;
+        }
+
+        setSelectedServices(finalServices);
+
+        // Check if we have enough customer info to skip the form
+        const hasRequiredInfo = extractedInfo.name && extractedInfo.phone &&
+                               extractedInfo.petName && extractedInfo.petType;
+
+        if (hasRequiredInfo) {
+          // Auto-fill customer info and show confirmation directly
+          setCustomerInfo({
+            name: extractedInfo.name || '',
+            phone: extractedInfo.phone || '',
+            petName: extractedInfo.petName || '',
+            petType: extractedInfo.petType || '',
+            time: extractedInfo.time || ''
+          });
+
+          // Calculate total price
+          const totalPrice = finalServices.reduce((sum, service) => {
+            const match = service.price.match(/(\d+(?:\.\d+)?)\s*k/i);
+            const price = match ? parseFloat(match[1]) : 0;
+            return sum + price;
+          }, 0);
+
+          // Create order summary
+          const orderSummaryData = {
+            name: extractedInfo.name,
+            phone: extractedInfo.phone,
+            petName: extractedInfo.petName,
+            petType: extractedInfo.petType,
+            service: finalServices.map(s => s.name).join('\n'),
+            services: finalServices,
+            time: extractedInfo.time || '',
+            price: Math.round(totalPrice * 10) / 10 + 'k'
+          };
+
+          // Show confirmation modal directly
+          setOrderSummary(orderSummaryData);
+          setShowOrderConfirm(true);
+        } else {
+          // Show form for customer to fill missing info
+          setCustomerInfo({
+            name: extractedInfo.name || '',
+            phone: extractedInfo.phone || '',
+            petName: extractedInfo.petName || '',
+            petType: extractedInfo.petType || '',
+            time: extractedInfo.time || ''
+          });
+          setShowInfoForm(true);
         }
       } catch (error) {
-        console.error('Error extracting services:', error);
+        console.error('Error extracting info:', error);
         alert('Lỗi xử lý. Vui lòng thử lại.');
       } finally {
         setLoading(false);
